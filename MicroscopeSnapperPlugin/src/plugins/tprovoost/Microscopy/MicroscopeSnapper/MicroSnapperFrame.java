@@ -47,6 +47,7 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 import plugins.tprovoost.Microscopy.MicroManagerForIcy.MicroscopeCore;
+import plugins.tprovoost.Microscopy.MicroManagerForIcy.MicroscopePluginAcquisition;
 import plugins.tprovoost.Microscopy.MicroManagerForIcy.MicroscopeSequence;
 import plugins.tprovoost.Microscopy.MicroManagerForIcy.Tools.ImageGetter;
 import plugins.tprovoost.Microscopy.MicroManagerForIcy.Tools.StageMover;
@@ -128,7 +129,8 @@ public class MicroSnapperFrame extends IcyFrame {
 				} else {
 					_locked_sequence = null;
 					_btn_lock_sequence.setIcon(new IcyIcon("padlock_open.png"));
-					_btn_lock_sequence.setToolTipText("Instead of being added to the focused sequence, images will be snapped to the locked one.");
+					_btn_lock_sequence
+							.setToolTipText("Instead of being added to the focused sequence, images will be snapped to the locked one.");
 				}
 			}
 		});
@@ -391,8 +393,10 @@ public class MicroSnapperFrame extends IcyFrame {
 					MicroscopeSequence s = new MicroscopeSequence(capturedImage);
 					Calendar calendar = Calendar.getInstance();
 					Icy.addSequence(s);
-					s.setName("" + calendar.get(Calendar.MONTH) + "_" + calendar.get(Calendar.DAY_OF_MONTH) + "_" + calendar.get(Calendar.YEAR) + "-"
-							+ calendar.get(Calendar.HOUR_OF_DAY) + "_" + calendar.get(Calendar.MINUTE) + "_" + calendar.get(Calendar.SECOND));
+					s.setName("" + calendar.get(Calendar.MONTH) + "_" + calendar.get(Calendar.DAY_OF_MONTH) + "_"
+							+ calendar.get(Calendar.YEAR) + "-"
+							+ calendar.get(Calendar.HOUR_OF_DAY) + "_" + calendar.get(Calendar.MINUTE) + "_"
+							+ calendar.get(Calendar.SECOND));
 				} else {
 					plugin.notifyAcquisitionStarted(true);
 					setRunningFlag(true);
@@ -405,8 +409,10 @@ public class MicroSnapperFrame extends IcyFrame {
 					}
 					Icy.addSequence(s);
 					Calendar calendar = Calendar.getInstance();
-					s.setName("" + calendar.get(Calendar.MONTH) + "_" + calendar.get(Calendar.DAY_OF_MONTH) + "_" + calendar.get(Calendar.YEAR) + "-"
-							+ calendar.get(Calendar.HOUR_OF_DAY) + "_" + calendar.get(Calendar.MINUTE) + "_" + calendar.get(Calendar.SECOND));
+					s.setName("" + calendar.get(Calendar.MONTH) + "_" + calendar.get(Calendar.DAY_OF_MONTH) + "_"
+							+ calendar.get(Calendar.YEAR) + "-"
+							+ calendar.get(Calendar.HOUR_OF_DAY) + "_" + calendar.get(Calendar.MINUTE) + "_"
+							+ calendar.get(Calendar.SECOND));
 					while (s.getFirstViewer() == null)
 						try {
 							Thread.sleep(50);
@@ -459,8 +465,9 @@ public class MicroSnapperFrame extends IcyFrame {
 					} else
 						list = captureStacks();
 					if (_interval_ != paramSeq.getPixelSizeZ()
-							&& ConfirmDialog.confirm("Warning", "Interval between slices in current sequence is different from the interval "
-									+ "you want for this capture. Do you want to create a new sequence instead ?")) {
+							&& ConfirmDialog.confirm("Warning",
+									"Interval between slices in current sequence is different from the interval "
+											+ "you want for this capture. Do you want to create a new sequence instead ?")) {
 						Sequence s1 = new MicroscopeSequence();
 						for (int i = 0; i < list.size(); ++i) {
 							s1.addImage(list.get(i));
@@ -469,8 +476,10 @@ public class MicroSnapperFrame extends IcyFrame {
 						}
 						Icy.addSequence(s1);
 						Calendar calendar = Calendar.getInstance();
-						s1.setName("" + calendar.get(Calendar.MONTH) + "_" + calendar.get(Calendar.DAY_OF_MONTH) + "_" + calendar.get(Calendar.YEAR) + "-"
-								+ calendar.get(Calendar.HOUR_OF_DAY) + "_" + calendar.get(Calendar.MINUTE) + "_" + calendar.get(Calendar.SECOND));
+						s1.setName("" + calendar.get(Calendar.MONTH) + "_" + calendar.get(Calendar.DAY_OF_MONTH) + "_"
+								+ calendar.get(Calendar.YEAR) + "-"
+								+ calendar.get(Calendar.HOUR_OF_DAY) + "_" + calendar.get(Calendar.MINUTE) + "_"
+								+ calendar.get(Calendar.SECOND));
 						while (s1.getFirstViewer() == null)
 							try {
 								Thread.sleep(50);
@@ -496,8 +505,9 @@ public class MicroSnapperFrame extends IcyFrame {
 						} else {
 							// SNAP C
 							if (_slices != s.getSizeZ()) {
-								MessageDialog.showDialog("Error number of stacks",
-										"The number of stacks of the snap does not correspond to the number of stacks in the current sequence.");
+								MessageDialog
+										.showDialog("Error number of stacks",
+												"The number of stacks of the snap does not correspond to the number of stacks in the current sequence.");
 								return;
 							}
 							Sequence tmp = s.getCopy();
@@ -508,7 +518,8 @@ public class MicroSnapperFrame extends IcyFrame {
 									VolumetricImage tmpVolum = tmp.getVolumetricImage(t);
 									for (int z = 0; z < tmp.getSizeZ(); ++z) {
 										IcyBufferedImage imgActu = tmpVolum.getImage(z);
-										IcyBufferedImage imgNew = new IcyBufferedImage(imgActu.getWidth(), imgActu.getHeight(), imgActu.getNumComponents() + 1,
+										IcyBufferedImage imgNew = new IcyBufferedImage(imgActu.getWidth(), imgActu.getHeight(),
+												imgActu.getNumComponents() + 1,
 												imgActu.getDataType_());
 										for (int c = 0; c < imgActu.getSizeC(); ++c) {
 											imgNew.setDataXYAsShort(c, imgActu.getDataXYAsShort(c));
@@ -621,5 +632,56 @@ public class MicroSnapperFrame extends IcyFrame {
 		synchronized void setRunningFlag(boolean isRunning) {
 			this.isRunning = isRunning;
 		}
+	}
+
+	public static ArrayList<IcyBufferedImage> captureStacks(MicroscopePluginAcquisition plugin, MicroscopeCore core, double zStart,
+			double zStop, double step, boolean relative) {
+		plugin.notifyAcquisitionStarted(true);
+		int slices = (int) (Math.abs(zStop - zStart) / step);
+		String nameZ = core.getFocusDevice();
+		ArrayList<IcyBufferedImage> list = new ArrayList<IcyBufferedImage>();
+		double absoluteZ = 0;
+		try {
+			absoluteZ = core.getPosition(nameZ);
+		} catch (Exception e1) {
+			new AnnounceFrame("Error with focus device : position unknown");
+			return list;
+		}
+		try {
+			if (relative)
+				StageMover.moveZRelative(zStart);
+			else
+				StageMover.moveZAbsolute(zStart);
+			core.waitForDevice(nameZ);
+			if (core.isSequenceRunning()) {
+				core.waitForExposure();
+			}
+			list.add(ImageGetter.snapImage(core));
+		} catch (Exception e) {
+			new AnnounceFrame("Error wile moving");
+			return list;
+		}
+		for (int z = 1; z < slices; ++z) {
+			try {
+				StageMover.moveZRelative(step);
+				if (core.isSequenceRunning()) {
+					core.waitForExposure();
+				}
+				core.waitForImageSynchro();
+				list.add(ImageGetter.snapImage(core));
+			} catch (Exception e) {
+				break;
+			}
+			double progress = 1D * z / slices * 90D;
+			plugin.notifyProgress((int) progress);
+		}
+		try {
+			if (absoluteZ != 0)
+				core.setPosition(nameZ, absoluteZ);
+		} catch (Exception e) {
+			new AnnounceFrame("Error while moving");
+		}
+		plugin.notifyAcquisitionOver();
+		return list;
 	}
 }
